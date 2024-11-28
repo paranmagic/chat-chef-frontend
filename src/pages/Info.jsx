@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import PrevButton from "../components/PrevButton";
 import InfoInput from "../components/InfoInput";
 import AddButton from "../components/AddButton";
@@ -22,9 +22,8 @@ const Info = () => {
       text: '재료명',
       value: '',
     }
-    
+
     setIngredientList([...ingredientList, newItem]);
-    console.log("ingredientList: ", ingredientList);
   };
 
   const handleNext = () => {
@@ -34,6 +33,21 @@ const Info = () => {
 
   // TEST code
   // const animalList = [ {id: 1,name: 'dog'},{id: 2,name: 'dog2'},{ id: 3,name: 'dog3'}, ];
+
+  const handleRemove = (id) => {
+    console.log("handleRemove id: ", id);
+    setIngredientList((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleChange = (selectedItem) => {
+    console.log("handleChange selectedItem: ", selectedItem);
+    setIngredientList((prev) => prev.map((item) => item.id === selectedItem.id ? selectedItem : item));
+  };
+
+  useEffect(() => {
+    //실행로직
+    console.log("ingredientList: ", ingredientList);
+  },[ingredientList])
 
   // view
   return (
@@ -51,7 +65,7 @@ const Info = () => {
             {/* START:input 영역 */}
             <div>
               {ingredientList.map((item) => (
-                <InfoInput key={item.id} content={item} />
+                <InfoInput key={item.id} content={item} onChange={handleChange} onRemove={handleRemove} />
               ))}
               {/* <ul>{animalList.map((animal, index) => <li key={`animal${index}`}>{animal.name}</li>)}</ul> */}
             </div>
