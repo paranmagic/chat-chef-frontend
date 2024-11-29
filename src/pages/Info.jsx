@@ -10,7 +10,6 @@ const Info = () => {
   // logic
   const history = useNavigate();
 
-  // TODO: set함수 추가하기
   const [ingredientList, setIngredientList] = useState([]); // 사용자가 입력할 재료 목록
 
   const addIngredient = () => {
@@ -27,8 +26,17 @@ const Info = () => {
   };
 
   const handleNext = () => {
-    // TODO: 최소 재료 1개 이상 유효성 체크
-    history('/chat')
+    // 최소 재료 1개 이상 유효성 체크
+    const filterdDataList = ingredientList.filter((item) => item.value.trim() !== "");
+    console.log('filterdDataList: ', filterdDataList);
+    if(filterdDataList.length){
+      // 입력값이 있는 경우
+      history('/chat');
+      return;
+    }
+
+    // 입력값이 없는 경우
+    alert('재료를 최소 1개 이상 입력해 주세요');
   };
 
   // TEST code
