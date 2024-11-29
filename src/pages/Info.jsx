@@ -6,7 +6,7 @@ import Button from "../components/Button";
 import Title from "../components/Title";
 import { useNavigate } from "react-router-dom";
 
-const Info = () => {
+const Info = ({sendIngredientList}) => {
   // logic
   const history = useNavigate();
 
@@ -29,8 +29,11 @@ const Info = () => {
     // 최소 재료 1개 이상 유효성 체크
     const filterdDataList = ingredientList.filter((item) => item.value.trim() !== "");
     console.log('filterdDataList: ', filterdDataList);
+    
+    // 입력값이 있는 경우
     if(filterdDataList.length){
-      // 입력값이 있는 경우
+      // 데이터를 부모에게 전달
+      sendIngredientList(ingredientList.map((item) => ({...item, value:item.value.trim()})));
       history('/chat');
       return;
     }
