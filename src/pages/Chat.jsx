@@ -1,28 +1,110 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import MessageBox from "../components/MessageBox";
 import PrevButton from "../components/PrevButton";
 import { MoonLoader } from "react-spinners";
 
 const Chat = ({ingredientList}) => {
-  // logic
-  console.log("ingredientList: ", ingredientList);
-
-  const [value, setValue] = useState("");
+  // useEffect의 용법 
+  // 1. 컴포넌트 내에 있는 state값 변경시 호출
+  // useEffect(() => {});
+  // 2. 해당 컴포넌트 생성시 호출 (1번 만 실행)
+  // useEffect(() => {}, []);
+  // 3. value, message라는 state가 변경 될때만 호출
+  // useEffect(() => {}, [value, message]);
 
   // TODO: set함수 추가하기
-  const [messages] = useState([]); // chatGPT와 사용자의 대화 메시지 배열
-  const [isInfoLoading] = useState(false); // 최초 정보 요청시 로딩
-  const [isMessageLoading] = useState(true); // 사용자와 메시지 주고 받을때 로딩
-  const hadleChange = (event) => {
+  const [value, setValue] = useState("");
+  const [messages, setMessages] = useState([]); // chatGPT와 사용자의 대화 메시지 배열
+  const [isInfoLoading, setIsInfoLoading] = useState(true); // 최초 정보 요청시 로딩
+  const [isMessageLoading, setIsMessageLoading] = useState(false); // 사용자와 메시지 주고 받을때 로딩
+  const [infoMessages, setInfoMessages] = useState([]); // 초기세팅메세지
+
+  const handleChange = (event) => {
     const { value } = event.target;
     console.log("value==>", value);
     setValue(value);
   };
 
-  const hadleSubmit = (event) => {
+  // logic
+  const ENDPOINT = process.env.REACT_APP_SERVER_ADDRESS;
+
+  // 최초정보 세팅
+  const sendInfo = useCallback(async() => {
+    setIsInfoLoading(true);
+    console.log('REACT_APP_SERVER_ADDRESS: ', process.env.REACT_APP_SERVER_ADDRESS);
+    try {
+      const response = await fetch(`${ENDPOINT}/recipe`, {
+        method: 'POST',
+        headers: {'Content-type': 'application/json'},
+        body: JSON.stringify({ingredientList})
+      });
+
+      const result = await response.json();
+      console.log("🚀 ~ sendInfo ~ result:", result)
+
+      // 최초 세팅 메세지 저장
+      const removeLastDataList = result.data.filter((item) => item.role !== 'assistant');
+      setInfoMessages(removeLastDataList);
+
+      // messages의 배열을 변경
+      const lastItem = result.data.find((item) => item.role === 'assistant');
+
+      const {role, content} = lastItem;
+
+      setMessages((prev) => [...prev, {
+        role: role,
+        content: content,
+      }]);
+
+      setIsInfoLoading(false);
+    } catch (error) {
+      console.error(error);
+    }
+  }, [ENDPOINT, ingredientList]);
+
+  const sendMessage = useCallback(async(userMessage) => {
+    setIsMessageLoading(true)
+
+    try {
+      const response = await fetch(`${ENDPOINT}/message`, {
+        method: 'POST',
+        headers: {'Content-type': 'application/json'},
+        body: JSON.stringify({userMessage: userMessage, messages: [...infoMessages, ...messages]})
+      });
+
+      const result = await response.json();
+      console.log("🚀 ~ sendInfo ~ result:", result)
+
+      const {role, content} = result.data;
+
+      setMessages((prev) => [...prev, {role, content}]);
+
+      setIsMessageLoading(false);
+    } catch (error) {
+      console.error(error);
+    }
+  }, [ENDPOINT, infoMessages, messages]);  
+
+  const handleSubmit = (event) => {
     event.preventDefault();
+    const userMessage = {
+      role: 'user',
+      content: value.trim()
+    }
+
+    setMessages((prev) => [...prev, userMessage]);
+    // TODO: API호출
+    sendMessage(userMessage);
+    setValue("");
+
     console.log("메시지 보내기");
   };
+
+  useEffect(() => {
+    // 최초 진입시 실행
+    ingredientList.length && sendInfo();
+  // eslint-disable-next-line
+  },[sendInfo]);
 
   // view
   return (
@@ -57,14 +139,14 @@ const Chat = ({ingredientList}) => {
           <form
             id="sendForm"
             className="w-full px-2 h-full"
-            onSubmit={hadleSubmit}
+            onSubmit={handleSubmit}
           >
             <input
               className="w-full text-sm px-3 py-2 h-full block rounded-xl bg-gray-100 focus:"
               type="text"
               name="message"
               value={value}
-              onChange={hadleChange}
+              onChange={handleChange}
             />
           </form>
           <button
